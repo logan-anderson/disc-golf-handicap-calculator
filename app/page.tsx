@@ -38,9 +38,14 @@ export default function Home() {
   );
   const [udiscRating, setUdiscRating] = React.useState("");
   const [handicap, setHandicap] = React.useState<number | null>(null);
+  const [lastCourseName, setLastCourseName] = React.useState<string>("");
+  const [manualEntry, setManualEntry] = React.useState(false);
+  const [manualParRating, setManualParRating] = React.useState("");
+  const [manualHoles, setManualHoles] = React.useState("");
+  const [manualCourseName, setManualCourseName] = React.useState("");
 
   const handleCalculate = () => {
-    if (!selectedCourse || !udiscRating) {
+    if (!udiscRating) {
       return;
     }
 
@@ -49,11 +54,39 @@ export default function Home() {
       return;
     }
 
-    const result = calculateHandicap(selectedCourse, rating);
+    let course: Course;
+    if (manualEntry) {
+      const parRating = parseFloat(manualParRating);
+      const holes = parseInt(manualHoles);
+      if (isNaN(parRating) || isNaN(holes) || holes <= 0) {
+        return;
+      }
+      course = {
+        name: manualCourseName || "Custom Course",
+        parRating,
+        holes,
+      };
+    } else {
+      if (!selectedCourse) {
+        return;
+      }
+      course = selectedCourse;
+    }
+
+    const result = calculateHandicap(course, rating);
     setHandicap(result);
+    setLastCourseName(course.name);
   };
 
-  const isFormValid = selectedCourse && udiscRating && !isNaN(parseFloat(udiscRating));
+  const isFormValid = manualEntry
+    ? udiscRating &&
+      !isNaN(parseFloat(udiscRating)) &&
+      manualParRating &&
+      !isNaN(parseFloat(manualParRating)) &&
+      manualHoles &&
+      !isNaN(parseInt(manualHoles)) &&
+      parseInt(manualHoles) > 0
+    : selectedCourse && udiscRating && !isNaN(parseFloat(udiscRating));
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
@@ -62,63 +95,147 @@ export default function Home() {
         <CardHeader>
           <CardTitle className="text-2xl">Disc Golf Handicap Calculator</CardTitle>
           <CardDescription>
-            Select a course and enter your UDisc rating to calculate your
+            Select a course or enter course details manually, then enter your UDisc rating to calculate your
             handicap.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Course Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="course">Course</Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  id="course"
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between font-normal"
-                >
-                  {selectedCourse ? selectedCourse.name : "Select a course..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command>
-                  <CommandInput placeholder="Search courses..." />
-                  <CommandList>
-                    <CommandEmpty>No course found.</CommandEmpty>
-                    <CommandGroup>
-                      {courses.map((course) => (
-                        <CommandItem
-                          key={course.name}
-                          value={course.name}
-                          onSelect={() => {
-                            setSelectedCourse(course);
-                            setOpen(false);
-                            setHandicap(null);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedCourse?.name === course.name
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          <span>{course.name}</span>
-                          <span className="ml-auto text-muted-foreground text-xs">
-                            Par Rating: {course.parRating}
-                          </span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          {/* Toggle between Course Selection and Manual Entry */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={!manualEntry ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => {
+                setManualEntry(false);
+                setHandicap(null);
+                setLastCourseName("");
+              }}
+            >
+              Select Course
+            </Button>
+            <Button
+              type="button"
+              variant={manualEntry ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => {
+                setManualEntry(true);
+                setSelectedCourse(null);
+                setOpen(false);
+                setHandicap(null);
+                setLastCourseName("");
+              }}
+            >
+              Manual Entry
+            </Button>
           </div>
+
+          {!manualEntry ? (
+            /* Course Selection */
+            <div className="space-y-2">
+              <Label htmlFor="course">Course</Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="course"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between font-normal"
+                  >
+                    {selectedCourse ? selectedCourse.name : "Select a course..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search courses..." />
+                    <CommandList>
+                      <CommandEmpty>No course found.</CommandEmpty>
+                      <CommandGroup>
+                        {courses.map((course) => (
+                          <CommandItem
+                            key={course.name}
+                            value={course.name}
+                            onSelect={() => {
+                              setSelectedCourse(course);
+                              setOpen(false);
+                              setHandicap(null);
+                              setLastCourseName("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedCourse?.name === course.name
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            <span>{course.name}</span>
+                            <span className="ml-auto text-muted-foreground text-xs">
+                              Par Rating: {course.parRating}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          ) : (
+            /* Manual Entry Fields */
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="courseName">Course Name (Optional)</Label>
+                <Input
+                  id="courseName"
+                  type="text"
+                  placeholder="Enter course name..."
+                  value={manualCourseName}
+                  onChange={(e) => {
+                    setManualCourseName(e.target.value);
+                    setHandicap(null);
+                    setLastCourseName("");
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="parRating">
+                  Par Rating <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="parRating"
+                  type="number"
+                  placeholder="Enter par rating (e.g., 130)"
+                  value={manualParRating}
+                  onChange={(e) => {
+                    setManualParRating(e.target.value);
+                    setHandicap(null);
+                    setLastCourseName("");
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="holes">
+                  Number of Holes <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="holes"
+                  type="number"
+                  placeholder="Enter number of holes (e.g., 9, 18)"
+                  min="1"
+                  value={manualHoles}
+                  onChange={(e) => {
+                    setManualHoles(e.target.value);
+                    setHandicap(null);
+                    setLastCourseName("");
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* UDisc Rating Input */}
           <div className="space-y-2">
@@ -131,6 +248,7 @@ export default function Home() {
               onChange={(e) => {
                 setUdiscRating(e.target.value);
                 setHandicap(null);
+                setLastCourseName("");
               }}
             />
           </div>
@@ -151,9 +269,9 @@ export default function Home() {
               <p className="text-4xl font-bold text-emerald-700 dark:text-emerald-400">
                 {handicap > 0 ? `+${handicap}` : handicap}
               </p>
-              {selectedCourse && (
+              {lastCourseName && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  for {selectedCourse.name}
+                  for {lastCourseName}
                 </p>
               )}
             </div>

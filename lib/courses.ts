@@ -1,19 +1,28 @@
 export interface Course {
   name: string;
   parRating: number;
+  holes: number;
 }
 
 export const courses: Course[] = [
   {
-    name: "Maple Hill",
-    parRating: 201,
+    name: "Montgomery Park Aceplace (9 hole layout)",
+    parRating: 130,
+    holes: 9,
   },
   {
-    name: "Blue Ribbon Pines",
-    parRating: 198,
+    name: "Haute Goat - Fling's Aceplace 25 ( 18 hole layout)",
+    parRating: 144,
+    holes: 18,
   },
   {
-    name: "Winthrop Gold",
-    parRating: 205,
+    name: "Bolender Aceplace (9 hole layout)",
+    parRating: 116,
+    holes: 9,
   },
+  {
+    name: "Dartmouth Commons Disc Golf Course (9 hole layout)",
+    holes: 9,
+    parRating: 144,
+  }
 ];
